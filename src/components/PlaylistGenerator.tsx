@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import TrackSearch from './TrackSearch';
-import { MusicalNoteIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
+import { MusicalNoteIcon } from '@heroicons/react/24/outline';
 
 interface Track {
   id?: string;
@@ -11,33 +11,21 @@ interface Track {
   album?: string;
   imageUrl?: string;
   tidalUrl?: string;
+  previewUrl?: string;
   matched: boolean;
-  error?: string;
-}
-
-interface PlaylistResponse {
-  tracks: Track[];
-  description: string;
 }
 
 export default function PlaylistGenerator() {
   const [description, setDescription] = useState('');
   const [suggestedTracks, setSuggestedTracks] = useState<Track[]>([]);
-  const [playlistDescription, setPlaylistDescription] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState<string>('');
-  const [progress, setProgress] = useState(0);
 
   const handleGenerateSuggestions = async () => {
     if (!description.trim()) return;
 
     setIsLoading(true);
     setError(null);
-    setSuggestedTracks([]);
-    setPlaylistDescription('');
-    setStatus('Generating track suggestions with AI...');
-    setProgress(0);
 
     try {
       const response = await fetch('/api/suggest', {
@@ -48,22 +36,18 @@ export default function PlaylistGenerator() {
         body: JSON.stringify({ description }),
       });
 
-      const data: PlaylistResponse = await response.json();
+      const data = await response.json();
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to generate suggestions');
       }
 
       setSuggestedTracks(data.tracks);
-      setPlaylistDescription(data.description || '');
-      setStatus(data.tracks.length > 0 ? '' : 'No tracks found');
     } catch (error: any) {
       console.error('Generation error:', error);
       setError(error.message || 'Failed to generate suggestions');
-      setStatus('');
     } finally {
       setIsLoading(false);
-      setProgress(0);
     }
   };
 
@@ -85,12 +69,6 @@ export default function PlaylistGenerator() {
         </button>
       </div>
 
-      {status && (
-        <div className="p-4 mb-8 bg-purple-500/10 border border-purple-500/20 rounded-lg text-purple-200 text-center backdrop-blur-sm">
-          {status}
-        </div>
-      )}
-
       {error && (
         <div className="p-4 mb-8 bg-red-500/10 border border-red-500/20 rounded-lg text-red-200 text-center backdrop-blur-sm">
           {error}
@@ -99,21 +77,7 @@ export default function PlaylistGenerator() {
 
       {suggestedTracks.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-xl font-semibold text-white mb-4">
-            Suggested Tracks
-            {isLoading && (
-              <span className="text-sm font-normal text-purple-200 ml-2">
-                (Finding tracks {suggestedTracks.length}/4)
-              </span>
-            )}
-          </h2>
-          
-          {playlistDescription && (
-            <div className="p-4 mb-4 bg-purple-500/5 border border-purple-300/10 rounded-lg text-purple-100 backdrop-blur-sm">
-              {playlistDescription}
-            </div>
-          )}
-
+          <h2 className="text-xl font-semibold text-white mb-4">Suggested Tracks</h2>
           <ul className="space-y-3">
             {suggestedTracks.map((track, index) => (
               <li
@@ -137,12 +101,6 @@ export default function PlaylistGenerator() {
                     <div className="text-sm text-purple-200/70">{track.artist}</div>
                     {track.album && (
                       <div className="text-sm text-purple-200/50">{track.album}</div>
-                    )}
-                    {track.error && (
-                      <div className="flex items-center mt-1 text-sm text-red-300">
-                        <ExclamationCircleIcon className="w-4 h-4 mr-1" />
-                        {track.error}
-                      </div>
                     )}
                   </div>
                   {track.matched && track.tidalUrl && (
